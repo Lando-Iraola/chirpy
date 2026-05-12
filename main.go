@@ -5,10 +5,17 @@ import (
 	"net/http"
 )
 
+func rootHandler() http.Handler {
+
+	handler := http.FileServer(http.Dir("."))
+	return handler
+}
+
 func main() {
 	const port = "8080"
 
 	mux := http.NewServeMux()
+	mux.Handle("/", rootHandler())
 
 	srv := &http.Server{
 		Addr:    ":" + port,
