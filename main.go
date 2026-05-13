@@ -5,17 +5,20 @@ import (
 	"net/http"
 )
 
-func rootHandler() http.Handler {
+type rootHandler struct{}
 
-	handler := http.FileServer(http.Dir("."))
-	return handler
+func readinessHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(200)
+	w.Write([]byte("OK"))
 }
 
 func main() {
 	const port = "8080"
 
 	mux := http.NewServeMux()
-	mux.Handle("/", rootHandler())
+	mux.Handle("/app/", http.StripPrefix("/app", http.FileServer(http.Dir("."))))
+	mux.HandleFunc("/healthz", readinessHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
