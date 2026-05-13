@@ -20,29 +20,12 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	})
 }
 
-func (cfg *apiConfig) middlewareMetricsReset(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits.Swap(0)
-		log.Print("Resetting the counter")
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-func readinessHandler(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
-}
-
-func (cfg *apiConfig) metricsHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		count := cfg.fileserverHits.Load()
-		b := fmt.Sprintf("Hits: %d", count)
-		w.Write([]byte(b))
-	})
+	count := cfg.fileserverHits.Load()
+	b := fmt.Sprintf("Hits: %d", count)
+	w.Write([]byte(b))
 }
 
 func main() {
@@ -53,8 +36,8 @@ func main() {
 	fileServer = http.StripPrefix("/app", fileServer)
 	mux.Handle("/app/", cfg.middlewareMetricsInc(fileServer))
 	mux.HandleFunc("/healthz", readinessHandler)
-	mux.Handle("/metrics", cfg.metricsHandler())
-	mux.Handle("/reset", cfg.middlewareMetricsReset(cfg.metricsHandler()))
+	mux.HandleFunc("/metrics", cfg.handlerMetrics)
+	mux.HandleFunc("/reset", cfg.handlerReset)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
