@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -29,22 +28,17 @@ func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, r *http.Reque
 	respondWithJSON(w, http.StatusOK, manyChirps)
 }
 
-func (cfg *apiConfig) handlerChirpsRetrieveOne(w http.ResponseWriter, r *http.Request) {
-	rawId := r.PathValue("chirpID")
-
-	if len(rawId) != 36 {
-		respondWithError(w, http.StatusNotFound, "Couldn't find chirp", fmt.Errorf("No chirp found by id: %s", rawId))
+func (cfg *apiConfig) handlerChirpsGet(w http.ResponseWriter, r *http.Request) {
+	chirpIDString := r.PathValue("chirpID")
+	chirpID, err := uuid.Parse(chirpIDString)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID", err)
 		return
 	}
-	id := uuid.MustParse(rawId)
 
-	chirp, err := cfg.dbQueries.GetChirp(r.Context(), id)
+	chirp, err := cfg.dbQueries.GetChirp(r.Context(), chirpID)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			respondWithError(w, http.StatusNotFound, "Couldn't find chirp", err)
-			return
-		}
-		respondWithError(w, http.StatusInternalServerError, "Couldn't query", err)
+		respondWithError(w, http.StatusNotFound, "Couldn't get chirp", err)
 		return
 	}
 
