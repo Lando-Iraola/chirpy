@@ -5,12 +5,22 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Lando-Iraola/chirpy/internal/auth"
+	"github.com/Lando-Iraola/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+}
+
 func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -22,14 +32,13 @@ func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := cfg.dbQueries.CreateUser(r.Context(), newUserData.Email)
-
-	type User struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
+	hashedPassword, err := auth.HashPassword(newUserData.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Unexpected server error", err)
+		return
 	}
+
+	user, err := cfg.dbQueries.CreateUser(r.Context(), database.CreateUserParams{Email: newUserData.Email, HashedPassword: hashedPassword})
 
 	respondWithJSON(w, http.StatusCreated, User{
 		ID:        user.ID,
