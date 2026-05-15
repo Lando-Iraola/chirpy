@@ -4,9 +4,9 @@ import (
 	"net/http"
 )
 
-func (cfg *apiConfig) handlerListChirps(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, r *http.Request) {
 
-	chirps, err := cfg.dbQueries.ListChirps(r.Context())
+	chirps, err := cfg.dbQueries.GetChirps(r.Context())
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't query", err)
 		return

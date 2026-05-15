@@ -9,7 +9,7 @@ VALUES(
 )
 RETURNING *;
 
--- name: ListChirps :many
+-- name: GetChirps :many
 SELECT 
     *
 FROM chirps
