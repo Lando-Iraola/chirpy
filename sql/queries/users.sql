@@ -13,7 +13,7 @@ RETURNING *;
 DELETE FROM users;
 
 
--- name: GetUser :one
+-- name: GetUserByEmail :one
 SELECT 
     *
 FROM
