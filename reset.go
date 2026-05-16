@@ -13,7 +13,7 @@ func (cfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := cfg.dbQueries.DeleteAllUsers(r.Context())
+	err := cfg.dbQueries.Reset(r.Context())
 	if err != nil {
 		log.Printf("Error when trying to clear all users: %s", err)
 	}
