@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -31,8 +33,12 @@ func (cfg *apiConfig) handlerPolkaWebhook(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = cfg.dbQueries.UpgradeUserToChirpyRed(r.Context(), event.Data.UserID)
+	_, err = cfg.dbQueries.UpgradeUserToChirpyRed(r.Context(), event.Data.UserID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "Couldn't find user", err)
+			return
+		}
 		respondWithError(w, http.StatusInternalServerError, "Failed to parse request", fmt.Errorf("Failed to parse request"))
 		return
 	}
