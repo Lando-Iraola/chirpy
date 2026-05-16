@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/Lando-Iraola/chirpy/internal/database"
 	"github.com/google/uuid"
@@ -40,6 +42,13 @@ func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, r *http.Reque
 			UpdatedAt: chirp.UpdatedAt,
 			Body:      chirp.Body,
 			UserID:    chirp.UserID,
+		})
+	}
+
+	sortMethod := r.URL.Query().Get("sort")
+	if strings.ToLower(sortMethod) == "desc" {
+		sort.Slice(manyChirps, func(i, j int) bool {
+			return manyChirps[i].CreatedAt.After(manyChirps[j].CreatedAt)
 		})
 	}
 
