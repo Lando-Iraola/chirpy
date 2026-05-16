@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -18,15 +19,6 @@ func TestAuthHashCompare(t *testing.T) {
 	if !isSame {
 		t.Error("Somehow, the passwords are different!")
 	}
-}
-
-func TestAuthHashCreate(t *testing.T) {
-	hash, err := HashPassword("My beloved Go can't possible be this cute!!")
-	if err != nil {
-		t.Error(err)
-	}
-
-	fmt.Printf("hash: %s", hash)
 }
 
 func TestCheckPasswordHash(t *testing.T) {
@@ -136,6 +128,72 @@ func TestValidateJWT(t *testing.T) {
 			}
 			if gotUserID != tt.wantUserID {
 				t.Errorf("ValidateJWT() gotUserID = %v, want %v", gotUserID, tt.wantUserID)
+			}
+		})
+	}
+}
+
+func TestValidateBearerToken(t *testing.T) {
+	userID := uuid.New()
+	validToken, _ := MakeJWT(userID, "secret", time.Hour)
+	goodHeader := http.Header{}
+	goodHeader.Add("Authorization", fmt.Sprintf("Bearer %s", validToken))
+
+	badHeader := http.Header{}
+	badHeader.Add("Authorization", "")
+
+	badHeader2 := http.Header{}
+	badHeader2.Add("", "")
+	tests := []struct {
+		name        string
+		tokenString string
+		tokenSecret string
+		bearerToken http.Header
+		wantErr     bool
+	}{
+		{
+			name:        "Valid bearer token",
+			tokenString: validToken,
+			tokenSecret: "secret",
+			bearerToken: goodHeader,
+			wantErr:     false,
+		},
+		{
+			name:        "Bad header",
+			tokenString: "",
+			tokenSecret: "secret",
+			bearerToken: badHeader,
+			wantErr:     true,
+		},
+		{
+			name:        "Missing header",
+			tokenString: "",
+			tokenSecret: "secret",
+			bearerToken: badHeader2,
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bToken, err := GetBearerToken(tt.bearerToken)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetBearerToken() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if bToken != tt.tokenString {
+				t.Errorf("GetBearerToken() Bearer Token = %v, want %v", bToken, tt.tokenString)
+			}
+
+			if bToken != "" {
+				user, err := ValidateJWT(bToken, "secret")
+				if err != nil {
+					t.Errorf("GetBearerToken() Bearer Token = %v, fails validation %v", bToken, err)
+				}
+
+				if user != userID {
+					t.Errorf("GetBearerToken() Bearer Token = %v, gives user %v, expected: %v", bToken, user, userID)
+				}
 			}
 		})
 	}
