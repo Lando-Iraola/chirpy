@@ -1,13 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Lando-Iraola/chirpy/internal/auth"
-	"github.com/Lando-Iraola/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerRefresh(w http.ResponseWriter, r *http.Request) {
@@ -29,15 +27,7 @@ func (cfg *apiConfig) handlerRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if time.Now().After(token.ExpiresAt) {
-		revoke := database.RevokeRefreshTokenParams{
-			Token:     token.Token,
-			UpdatedAt: time.Now(),
-			RevokedAt: sql.NullTime{
-				Time:  time.Now(),
-				Valid: true,
-			},
-		}
-		cfg.dbQueries.RevokeRefreshToken(r.Context(), revoke)
+		cfg.dbQueries.RevokeRefreshToken(r.Context(), token.Token)
 		respondWithError(w, http.StatusUnauthorized, "Token expired", fmt.Errorf("Token expired"))
 		return
 	}
@@ -64,16 +54,7 @@ func (cfg *apiConfig) handlerRevoke(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	revoke := database.RevokeRefreshTokenParams{
-		Token:     bearer,
-		UpdatedAt: time.Now(),
-		RevokedAt: sql.NullTime{
-			Time:  time.Now(),
-			Valid: true,
-		},
-	}
-
-	err = cfg.dbQueries.RevokeRefreshToken(r.Context(), revoke)
+	err = cfg.dbQueries.RevokeRefreshToken(r.Context(), bearer)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error revoking token", fmt.Errorf("Error revoking token"))
 		return

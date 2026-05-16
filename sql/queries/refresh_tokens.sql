@@ -23,7 +23,7 @@ WHERE
 -- name: RevokeRefreshToken :exec
 update refresh_tokens 
 set 
-    revoked_at = $2,
-    updated_at = $3
+    revoked_at = NOW(),
+    updated_at = NOW()
 where 
     token = $1;
