@@ -88,7 +88,12 @@ func GetBearerToken(headers http.Header) (string, error) {
 		return "", fmt.Errorf("Missing Bearer headed!")
 	}
 
-	return bearer[7:], nil
+	splitAuth := strings.Split(bearer, " ")
+	if len(splitAuth) < 2 || splitAuth[0] != "Bearer" {
+		return "", errors.New("malformed authorization header")
+	}
+
+	return splitAuth[1], nil
 }
 
 func MakeRefreshToken() string {
