@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/alexedwards/argon2id"
@@ -97,10 +98,15 @@ func MakeRefreshToken() string {
 }
 
 func GetAPIKey(headers http.Header) (string, error) {
-	bearer := headers.Get("Authorization")
-	if bearer == "" {
-		return "", fmt.Errorf("Missing Api key headed!")
+	authHeader := headers.Get("Authorization")
+	if authHeader == "" {
+		return "", fmt.Errorf("Missing Api key header!")
 	}
 
-	return bearer[7:], nil
+	splitAuth := strings.Split(authHeader, " ")
+	if len(splitAuth) < 2 || splitAuth[0] != "ApiKey" {
+		return "", errors.New("malformed authorization header")
+	}
+
+	return splitAuth[1], nil
 }
